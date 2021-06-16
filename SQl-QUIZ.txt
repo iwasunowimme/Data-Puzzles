@@ -1,0 +1,42 @@
+SELECT
+    100.0 * SUM(CASE WHEN (input_total_usd=0 AND output_total_usd>0) THEN 1 ELSE 0 END) / COUNT(*) AS result
+FROM
+    transactions
+	
+	SELECT  
+	COUNT(CASE WHEN (input_total_usd = 0 AND output_total_usd > 0) then NULL else 1 end) / count(distinct block_id) as result
+FROM transactions
+
+SELECT recipient
+FROM inputs o
+	where recipient NOT IN (SELECT DISTINCT recipient FROM outputs)
+GROUP BY recipient
+having count(recipient) > 20
+
+SELECT block_id, hash
+FROM transactions
+group by block_id
+ORDER BY block_id asc , output_total_usd desc
+
+WITH row_number_block_id AS (
+  SELECT *, ROW_NUMBER() OVER (PARTITION BY block_id ORDER BY input_total_usd) AS rn
+  FROM transactions
+)
+SELECT block_id, hash
+FROM row_number_block_id
+WHERE rn = 1 OR rn = 2 OR rn = 3
+
+
+SELECT recipient
+FROM outputs
+WHERE transaction_hash = 
+	(SELECT transaction_hash
+	FROM inputs
+	WHERE recipient IN
+		(SELECT recipient
+		FROM outputs 
+		WHERE transaction_hash = (
+			SELECT transaction_hash
+			FROM inputs 
+			WHERE recipient = '1LsMxZRJuRxshvCzNZtLkV71gXm62mWvR5')))
+ORDER BY recipient
